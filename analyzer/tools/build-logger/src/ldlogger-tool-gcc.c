@@ -584,9 +584,21 @@ int loggerGccParserCollectActions(
   }
 
   if (fix_output == 1 && action->sources.size != 0) {
+    char *idx;
     char newPath[PATH_MAX];
-    strcpy(newPath, action->sources.data[0]);
-    char *idx = strrchr(newPath, '.');
+    const char *source = action->sources.data[0];
+    strcpy(newPath, action->output.path);
+    idx = strrchr(newPath, '/');
+    idx[1] = '\0';
+    idx = strrchr(source, '/');
+    if (idx) {
+      strcat(newPath, idx);
+    } else {
+      strcat(newPath, "/");
+      strcat(newPath, source);
+    }
+
+    idx = strrchr(newPath, '.');
     if (idx && (idx + 2) < (newPath + PATH_MAX)) {
       *++idx = 'o';
       *++idx = '\0';
