@@ -319,6 +319,65 @@ void transformSomePathsAbsolute(LoggerVector* args_)
   }
 }
 
+int loggerInstallParserCollectActions(
+  const char* prog_,
+  const char* const argv_[],
+  LoggerVector* actions_)
+{
+  LOG_ERROR("Install: %s", prog_)
+
+  size_t i;
+  /* Position of the last include path + 1 */
+  char full_prog_path[PATH_MAX+1];
+  char *path_ptr = NULL;
+  char* responseFile = NULL;
+
+  LoggerAction* action = loggerActionNew();
+
+  char* keepLinkVar = getenv("CC_LOGGER_KEEP_LINK");
+  int keepLink = keepLinkVar && strcmp(keepLinkVar, "true") == 0;
+
+  for (i = 0; argv_[i]; ++i)
+  {
+    const char* current = argv_[i];
+
+    if (current[0])
+      loggerVectorAdd(&action->arguments, loggerStrDup(current));
+  }
+
+  char srcPath[PATH_MAX];
+  const char *current = argv_[i-2];
+
+  if (getenv("CC_LOGGER_ABS_PATH"))
+  {
+    loggerMakePathAbs(current, srcPath, 0);
+  }
+  else
+  {
+    strcpy(srcPath, current);
+  }
+
+  loggerVectorAddUnique(&action->sources, loggerStrDup(srcPath),
+            (LoggerCmpFuc) &strcmp);
+
+
+  char dstPath[PATH_MAX];
+  strcpy(dstPath, argv_[i-1]);
+  //strncat(dstPath, "/", PATH_MAX);
+  //strncat(dstPath, current, PATH_MAX);
+
+  loggerFileInitFromPath(
+          &action->output,
+          loggerStrDup(dstPath)
+  );
+
+  if (action->sources.size != 0) {
+    loggerVectorAdd(actions_, action);
+  }
+
+  return 1;
+}
+
 int loggerArParserCollectActions(
   const char* prog_,
   const char* const argv_[],
@@ -332,8 +391,6 @@ int loggerArParserCollectActions(
   char *path_ptr = NULL;
   char* responseFile = NULL;
 
-  size_t lastIncPos = 1;
-  size_t lastSysIncPos = 1;
   LoggerAction* action = loggerActionNew();
 
   char* keepLinkVar = getenv("CC_LOGGER_KEEP_LINK");

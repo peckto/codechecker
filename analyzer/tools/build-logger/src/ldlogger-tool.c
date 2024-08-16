@@ -177,6 +177,14 @@ int loggerCollectActionsByProgName(
     turnLogging(1);
     return ret;
   }
+  else if (matchToProgram("install", prog_))
+  {
+    int ret;
+    turnLogging(0);
+    ret = loggerInstallParserCollectActions(prog_, argv_, actions_);
+    turnLogging(1);
+    return ret;
+  }
   else if (matchToProgramList("CC_LOGGER_JAVAC_LIKE", prog_))
   {
     return loggerJavacParserCollectActions(prog_, argv_, actions_);
