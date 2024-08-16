@@ -85,10 +85,12 @@ static void writeAction(
       "\t{\n" \
       "\t\t\"directory\": \"%s\",\n" \
       "\t\t\"command\": \"%s\",\n" \
+      "\t\t\"output\": \"%s\",\n" \
       "\t\t\"file\": \"%s\"\n" \
       "\t}\n",
       wd_,                                    /* directory */
       command,                                /* command */
+      action_->output.path,
       (const char*) action_->sources.data[i]  /* file */
     );
   }

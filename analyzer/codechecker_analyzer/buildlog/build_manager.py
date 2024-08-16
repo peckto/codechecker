@@ -86,6 +86,8 @@ def perform_build_command(logfile, command, keep_link, silent=False,
         log_env = env.get_log_env(logfile, original_env)
         if 'CC_LOGGER_GCC_LIKE' not in log_env:
             log_env['CC_LOGGER_GCC_LIKE'] = 'gcc:g++:clang:clang++:/cc:c++'
+        if 'CC_LOGGER_AR_LIKE' not in log_env:
+            log_env['CC_LOGGER_AR_LIKE'] = 'ar'
         if keep_link or ('CC_LOGGER_KEEP_LINK' in log_env and
                          log_env['CC_LOGGER_KEEP_LINK'] == 'true'):
             log_env['CC_LOGGER_KEEP_LINK'] = 'true'

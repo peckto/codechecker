@@ -319,6 +319,73 @@ void transformSomePathsAbsolute(LoggerVector* args_)
   }
 }
 
+int loggerArParserCollectActions(
+  const char* prog_,
+  const char* const argv_[],
+  LoggerVector* actions_)
+{
+  LOG_ERROR("AR: %s type: %s", prog_, argv_[1])
+
+  size_t i;
+  /* Position of the last include path + 1 */
+  char full_prog_path[PATH_MAX+1];
+  char *path_ptr = NULL;
+  char* responseFile = NULL;
+
+  size_t lastIncPos = 1;
+  size_t lastSysIncPos = 1;
+  LoggerAction* action = loggerActionNew();
+
+  char* keepLinkVar = getenv("CC_LOGGER_KEEP_LINK");
+  int keepLink = keepLinkVar && strcmp(keepLinkVar, "true") == 0;
+
+  if (prog_ && prog_[0] != '/')
+    path_ptr = findFullPath(prog_, full_prog_path);
+
+  if (path_ptr) /* Log compiler with full path. */
+    loggerVectorAdd(&action->arguments, loggerStrDup(full_prog_path));
+  else  /* Compiler was not found in path, log the binary name only. */
+    loggerVectorAdd(&action->arguments, loggerStrDup(prog_));
+
+  for (i = 1; argv_[i]; ++i)
+  {
+    const char* current = argv_[i];
+
+    if (current[0])
+      loggerVectorAdd(&action->arguments, loggerStrDup(current));
+  }
+
+  if ( strstr(argv_[1], "r")) {
+    loggerFileInitFromPath(
+          &action->output,
+          loggerStrDup(argv_[2])
+    );
+
+    for (int si = 3; argv_[si];si++) {
+      char newPath[PATH_MAX];
+      const char *current = argv_[si];
+
+      if (getenv("CC_LOGGER_ABS_PATH"))
+      {
+        loggerMakePathAbs(current, newPath, 0);
+      }
+      else
+      {
+        strcpy(newPath, current);
+      }
+
+      loggerVectorAddUnique(&action->sources, loggerStrDup(newPath),
+                (LoggerCmpFuc) &strcmp);
+    }
+  }
+
+  if (action->sources.size != 0) {
+    loggerVectorAdd(actions_, action);
+  }
+
+  return 1;
+}
+
 int loggerGccParserCollectActions(
   const char* prog_,
   const char* const argv_[],
@@ -331,6 +398,7 @@ int loggerGccParserCollectActions(
   char full_prog_path[PATH_MAX+1];
   char *path_ptr = NULL;
   char* responseFile = NULL;
+  int fix_output = 0;
 
   size_t lastIncPos = 1;
   size_t lastSysIncPos = 1;
@@ -411,6 +479,10 @@ int loggerGccParserCollectActions(
           lang = CPP;
       }
 
+      else if (startsWith(current, "-c")) {
+        fix_output += 1;
+      }
+
       /* Determining the output of the build command. In some cases some .o or
        * or other files may be considered a source file when they are a
        * parameter of a flag other than -o, such as -MT. The only usage of
@@ -418,6 +490,7 @@ int loggerGccParserCollectActions(
        */
       else if (startsWith(current, "-o"))
       {
+        fix_output += 2;
         loggerFileInitFromPath(
           &action->output,
           current[2] ? current + 2 : argv_[i + 1]);
@@ -450,6 +523,20 @@ int loggerGccParserCollectActions(
         }
       }
       free(ext);
+    }
+  }
+
+  if (fix_output == 1 && action->sources.size != 0) {
+    char newPath[PATH_MAX];
+    strcpy(newPath, action->sources.data[0]);
+    char *idx = strrchr(newPath, '.');
+    if (idx && (idx + 2) < (newPath + PATH_MAX)) {
+      *++idx = 'o';
+      *++idx = '\0';
+      loggerFileInitFromPath(
+          &action->output,
+          newPath
+      );
     }
   }
 

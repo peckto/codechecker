@@ -155,6 +155,14 @@ int loggerCollectActionsByProgName(
     turnLogging(1);
     return ret;
   }
+  else if (matchToProgramList("CC_LOGGER_AR_LIKE", prog_))
+  {
+    int ret;
+    turnLogging(0);
+    ret = loggerArParserCollectActions(prog_, argv_, actions_);
+    turnLogging(1);
+    return ret;
+  }
   else if (matchToProgramList("CC_LOGGER_JAVAC_LIKE", prog_))
   {
     return loggerJavacParserCollectActions(prog_, argv_, actions_);

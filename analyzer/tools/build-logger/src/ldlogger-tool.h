@@ -56,7 +56,7 @@ LoggerAction* loggerActionNew();
 
 /**
  * Frees an action instance.
- * 
+ *
  * @param act_ an action.
  */
 void loggerActionFree(LoggerAction* act_);
@@ -84,6 +84,11 @@ int loggerCollectActionsByProgName(
  * @return zero on error, non zero on success.
  */
 int loggerGccParserCollectActions(
+  const char* prog_,
+  const char* const argv_[],
+  LoggerVector* actions_);
+
+int loggerArParserCollectActions(
   const char* prog_,
   const char* const argv_[],
   LoggerVector* actions_);
