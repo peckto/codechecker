@@ -17,6 +17,20 @@
 
 extern char** environ;
 
+static int matchToProgram(
+const char* prog,
+const char* progPath_)
+{
+  const char *end = strrchr(progPath_, '/');
+  if (!end) {
+    end = progPath_;
+  }
+  if (strcmp(end+1, prog) == 0) {
+    return 1;
+  }
+  return 0;
+}
+
 /**
  * Reads a colon separated list from the given environment variable and tries
  * to match to the given program name. If one program matches (from the list)
@@ -155,7 +169,7 @@ int loggerCollectActionsByProgName(
     turnLogging(1);
     return ret;
   }
-  else if (matchToProgramList("CC_LOGGER_AR_LIKE", prog_))
+  else if (matchToProgram("ar", prog_))
   {
     int ret;
     turnLogging(0);
