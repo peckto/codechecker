@@ -24,8 +24,10 @@ const char* progPath_)
   const char *end = strrchr(progPath_, '/');
   if (!end) {
     end = progPath_;
+  } else {
+    end++;  // skip /
   }
-  if (strcmp(end+1, prog) == 0) {
+  if (strcmp(end, prog) == 0) {
     return 1;
   }
   return 0;
