@@ -8,7 +8,8 @@
 
 #include "ldlogger-tool.h"
 #include "ldlogger-util.h"
-
+#define _XOPEN_SOURCE 500
+#include <ftw.h>
 #include <sys/types.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -317,6 +318,149 @@ void transformSomePathsAbsolute(LoggerVector* args_)
         pathComing = 1;
     }
   }
+}
+
+static char copyDest[PATH_MAX];
+static LoggerVector* copyAction;
+static int baseDirOffset = 0;
+const char* const *copyCmd;
+
+static void makePathAbsOrNot(const char *current, char * srcPath) {
+  if (getenv("CC_LOGGER_ABS_PATH"))
+  {
+    loggerMakePathAbs(current, srcPath, 0);
+  }
+  else
+  {
+    strcpy(srcPath, current);
+  }
+}
+
+static void addCopyToActionFile(const char *src, const char *dst) {
+  LoggerAction* action = loggerActionNew();
+  for (size_t i = 0; copyCmd[i]; ++i)
+  {
+    const char* current = copyCmd[i];
+
+    if (current[0])
+      loggerVectorAdd(&action->arguments, loggerStrDup(current));
+  }
+
+  char srcPath[PATH_MAX];
+  char dstPath[PATH_MAX];
+  makePathAbsOrNot(src, srcPath);
+  makePathAbsOrNot(dst, dstPath);
+
+  loggerVectorAddUnique(&action->sources, loggerStrDup(srcPath), (LoggerCmpFuc) &strcmp);
+
+  loggerFileInitFromPath(&action->output, loggerStrDup(dstPath));
+
+  LOG_ERROR("copy: %s -> %s", srcPath, dstPath)
+
+  loggerVectorAdd(copyAction, action);
+}
+
+static int
+display_info(const char *fpath, const struct stat *sb,
+             int tflag, struct FTW *ftwbuf)
+{
+    if (tflag == FTW_F) {
+      char dstPath[PATH_MAX];
+      strcpy(dstPath, copyDest);
+      strcat(dstPath, "/");
+      strcat(dstPath, fpath + baseDirOffset);
+      LOG_ERROR("copy recursive: %s -> %s (%s)", fpath, copyDest, dstPath);
+      addCopyToActionFile(fpath, dstPath);
+    }
+    return 0;           /* To tell nftw() to continue */
+}
+
+int loggerCpParserCollectActions(
+  const char* prog_,
+  const char* const argv_[],
+  LoggerVector* actions_)
+{
+  LOG_ERROR("Copy: %s", prog_)
+  const char *argv[256];
+
+  size_t argc = 0;
+  for (size_t i = 1; argv_[i]; ++i)
+  {
+    if (argv_[i][0] != '-') {
+      argv[argc++] = argv_[i];
+    }
+  }
+  argc--;
+  LOG_ERROR("argc: %d", argc);
+  if (argc < 1) {
+    LOG_ERROR("Not enough arguments: %d", argc)
+    // not enouth arguments for a copy command
+    return 1;
+  }
+
+  struct stat sb;
+  if (stat(argv[argc], &sb) == -1) {
+    LOG_ERROR("stat error: %s", argv[argc])
+    return 1;
+  }
+  copyAction = actions_;
+  copyCmd = argv_;
+
+  if ((sb.st_mode & S_IFMT) == S_IFDIR) {
+    LOG_ERROR("Destination is directory")
+    int flags = 0;
+    strcpy(copyDest, argv[argc]);
+
+    for (size_t i = 0; i < argc; ++i)
+    {
+      LOG_ERROR("Copy: %s -> %s", argv[i], argv[argc])
+
+      if (stat(argv[i], &sb) == -1) {
+        LOG_ERROR("stat error: %s", argv[1])
+        return 1;
+      }
+      if ((sb.st_mode & S_IFMT) == S_IFDIR) {
+        // source and destination is directory
+        const char *idx = strrchr(argv[i], '/');
+        baseDirOffset = 0;
+        if (idx) {
+          baseDirOffset = idx - argv[i];
+        }
+        nftw(argv[i], display_info, 20, flags);
+      } else {
+        // source is file and destination is directory
+        char dstPath[PATH_MAX];
+        const char *idx = strrchr(argv[i], '/');
+        strcpy(dstPath, argv[argc]);
+        if (idx) {
+          strcat(dstPath, idx);
+        } else {
+          strcat(dstPath, "/");
+          strcat(dstPath, argv[i]);
+        }
+        addCopyToActionFile(argv[i], dstPath);
+      }
+    }
+  } else {
+    if (argc != 1) {
+      // if destination is a file, only one copy source is accepted
+      LOG_ERROR("invalid number of arguments for copy")
+      return 1;
+    }
+    if (stat(argv[1], &sb) == -1) {
+      LOG_ERROR("stat error: %s", argv[0])
+      return 1;
+    }
+    if ((sb.st_mode & S_IFMT) == S_IFDIR) {
+      LOG_ERROR("invalid souce path: %s", argv[0])
+      // if destinatinon is a file, source must be a file too
+      return 1;
+    }
+    // copy file to file
+    addCopyToActionFile(argv[0], argv[1]);
+  }
+
+  return 1;
 }
 
 int loggerInstallParserCollectActions(

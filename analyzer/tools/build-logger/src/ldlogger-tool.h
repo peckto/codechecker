@@ -98,6 +98,11 @@ int loggerInstallParserCollectActions(
   const char* const argv_[],
   LoggerVector* actions_);
 
+int loggerCpParserCollectActions(
+  const char* prog_,
+  const char* const argv_[],
+  LoggerVector* actions_);
+
 /**
  * Parser function for JavaC like commands.
  *
