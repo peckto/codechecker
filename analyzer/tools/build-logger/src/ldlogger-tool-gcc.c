@@ -423,7 +423,7 @@ int loggerCpParserCollectActions(
         // source and destination is directory
         const char *idx = strrchr(argv[i], '/');
         baseDirOffset = 0;
-        if (idx) {
+        if (idx && idx[1] != '\0') {
           baseDirOffset = idx - argv[i];
         }
         nftw(argv[i], display_info, 20, flags);
