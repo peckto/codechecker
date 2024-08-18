@@ -381,12 +381,16 @@ int loggerCpParserCollectActions(
   LoggerVector* actions_)
 {
   LOG_ERROR("Copy: %s", prog_)
-  const char *argv[256];
+  const char *argv[1024];
 
   size_t argc = 0;
   for (size_t i = 1; argv_[i]; ++i)
   {
     if (argv_[i][0] != '-') {
+      if (argc >= (sizeof(argv)-1)) {
+        LOG_ERROR("Too many arguments on copy command")
+        return 1;
+      }
       argv[argc++] = argv_[i];
     }
   }
