@@ -23,7 +23,7 @@
  * sources of linker actions.
  */
 static const char* const srcExts[] = {
-  "c", "cc", "cp", "cpp", "cxx", "c++", "o", "so", "a", NULL
+  "c", "cc", "cp", "cpp", "cxx", "c++", "o", "so", "a", "s", NULL
 };
 
 /**
