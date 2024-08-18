@@ -561,7 +561,7 @@ int loggerArParserCollectActions(
       loggerVectorAdd(&action->arguments, loggerStrDup(current));
   }
 
-  if ( strstr(argv_[1], "r")) {
+  if ( strstr(argv_[1], "r") || strstr(argv_[1], "q")) {
     loggerFileInitFromPath(
           &action->output,
           loggerStrDup(argv_[2])
