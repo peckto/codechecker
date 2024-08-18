@@ -452,7 +452,7 @@ int loggerCpParserCollectActions(
       LOG_ERROR("invalid number of arguments for copy")
       return 1;
     }
-    if (stat(argv[1], &sb) == -1) {
+    if (stat(argv[0], &sb) == -1) {
       LOG_ERROR("stat error on source path: %s", argv[0])
       return 1;
     }
