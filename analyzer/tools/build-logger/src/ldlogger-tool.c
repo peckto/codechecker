@@ -187,7 +187,7 @@ int loggerCollectActionsByProgName(
     turnLogging(1);
     return ret;
   }
-  else if (matchToProgram("cp", prog_))
+  else if (matchToProgram("cp", prog_) || matchToProgram("mv", prog_))
   {
     int ret;
     turnLogging(0);
