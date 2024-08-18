@@ -399,14 +399,15 @@ int loggerCpParserCollectActions(
   }
 
   struct stat sb;
-  if (stat(argv[argc], &sb) == -1) {
-    LOG_ERROR("stat error: %s", argv[argc])
-    return 1;
+  int stat_ret;
+  stat_ret = stat(argv[argc], &sb);
+  if (stat_ret == -1) {
+    LOG_ERROR("stat error on dest path, assume file: %s", argv[argc])
   }
   copyAction = actions_;
   copyCmd = argv_;
 
-  if ((sb.st_mode & S_IFMT) == S_IFDIR) {
+  if (stat_ret == 0 && (sb.st_mode & S_IFMT) == S_IFDIR) {
     LOG_ERROR("Destination is directory")
     int flags = 0;
     strcpy(copyDest, argv[argc]);
@@ -416,7 +417,7 @@ int loggerCpParserCollectActions(
       LOG_ERROR("Copy: %s -> %s", argv[i], argv[argc])
 
       if (stat(argv[i], &sb) == -1) {
-        LOG_ERROR("stat error: %s", argv[1])
+        LOG_ERROR("stat error on source path: %s", argv[i])
         return 1;
       }
       if ((sb.st_mode & S_IFMT) == S_IFDIR) {
@@ -448,7 +449,7 @@ int loggerCpParserCollectActions(
       return 1;
     }
     if (stat(argv[1], &sb) == -1) {
-      LOG_ERROR("stat error: %s", argv[0])
+      LOG_ERROR("stat error on source path: %s", argv[0])
       return 1;
     }
     if ((sb.st_mode & S_IFMT) == S_IFDIR) {
